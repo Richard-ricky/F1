@@ -174,32 +174,96 @@ const CIRCUITS: Record<string, CircuitData> = {
   },
 
   // ── MONTRÉAL ───────────────────────────────────────────────────────────────
+  // Retraced from the official 2026 circuit map (Île Notre-Dame).
+  // Circuit runs clockwise. Pit straight on the eastern side (S/F to T1).
+  // Key features: Casino hairpin (SW), Wall of Champions chicane (N),
+  // island chicane (SE), two DRS zones on both straights.
   Montréal: {
     key: 'Montréal', name: 'Circuit Gilles Villeneuve',
     location: 'Montréal, Canada', length: '4.361 km', turns: 14,
-    center: [-73.5228, 45.5000], zoom: 14.9, bearing: -20, pitch: 0,
+    center: [-73.5212, 45.5046], zoom: 15.0, bearing: 0, pitch: 0,
     track: [
-      [-73.5218,45.5010],[-73.5210,45.5015],[-73.5200,45.5014],[-73.5192,45.5008],
-      [-73.5190,45.5000],[-73.5194,45.4993],[-73.5203,45.4988],[-73.5213,45.4987],
-      [-73.5221,45.4991],[-73.5227,45.4999],[-73.5226,45.5007],[-73.5218,45.5010],
+      // Pit straight / Start-Finish — eastern edge, heading north
+      [-73.5219, 45.5064],
+      [-73.5218, 45.5070],
+      [-73.5216, 45.5078],
+      [-73.5214, 45.5086],
+      // T1 — right-hander at north end (Wall of Champions chicane entry)
+      [-73.5210, 45.5092],
+      [-73.5205, 45.5096],
+      [-73.5198, 45.5097],  // T1 apex
+      [-73.5192, 45.5094],
+      // T2/T3 — left-right chicane (Wall of Champions)
+      [-73.5187, 45.5089],
+      [-73.5184, 45.5082],
+      [-73.5182, 45.5076],
+      [-73.5180, 45.5068],  // Back straight DRS zone begins
+      // Back straight — western side, heading south (DRS zone 2)
+      [-73.5232, 45.5058],
+      [-73.5238, 45.5050],
+      [-73.5242, 45.5042],
+      [-73.5244, 45.5034],
+      [-73.5244, 45.5026],
+      [-73.5243, 45.5018],
+      // Casino hairpin — southwest corner (tightest point)
+      [-73.5240, 45.5010],
+      [-73.5235, 45.5004],
+      [-73.5228, 45.5000],  // Casino hairpin apex
+      [-73.5221, 45.4998],
+      [-73.5215, 45.5000],
+      [-73.5210, 45.5004],
+      // Sector 2 — chicane sequence heading east
+      [-73.5205, 45.5010],
+      [-73.5200, 45.5014],
+      [-73.5196, 45.5012],
+      [-73.5194, 45.5008],
+      // T8/T9/T10 — island chicane (Pont de la Concorde section)
+      [-73.5196, 45.5002],
+      [-73.5200, 45.4998],
+      [-73.5204, 45.4996],
+      [-73.5210, 45.4996],
+      [-73.5214, 45.4998],
+      // T13/T14 — final hairpin, rejoining pit straight
+      [-73.5217, 45.5002],
+      [-73.5218, 45.5008],
+      [-73.5220, 45.5016],
+      // Pit straight — DRS zone 1, back to S/F
+      [-73.5221, 45.5026],
+      [-73.5221, 45.5036],
+      [-73.5220, 45.5048],
+      [-73.5219, 45.5064],  // S/F line
     ],
     turnLabels: [
-      { lng:-73.5208, lat:45.5015, label:'T1'  },
-      { lng:-73.5190, lat:45.5001, label:'T6'  },
-      { lng:-73.5206, lat:45.4988, label:'T10' },
-      { lng:-73.5225, lat:45.5003, label:'T13' },
+      // T1 — right-hander at north, entry to Wall of Champions
+      { lng:-73.5205, lat:45.5095, label:'T1'  },
+      // T2/T3 — Wall of Champions chicane
+      { lng:-73.5187, lat:45.5088, label:'T2'  },
+      // T6 — Casino hairpin (the big one, southwest)
+      { lng:-73.5228, lat:45.5000, label:'T6'  },
+      // T8 — left after Casino
+      { lng:-73.5202, lat:45.5013, label:'T8'  },
+      // T10 — island chicane
+      { lng:-73.5196, lat:45.5005, label:'T10' },
+      // T13 — final hairpin before pit straight
+      { lng:-73.5215, lat:45.5000, label:'T13' },
     ],
     drsZones: [
-      { lng:-73.5213, lat:45.5012, label:'DRS 1' },
-      { lng:-73.5209, lat:45.4990, label:'DRS 2' },
+      // DRS Zone 1 — pit straight (eastern side, T14 to T1)
+      { lng:-73.5219, lat:45.5048, label:'DRS 1' },
+      // DRS Zone 2 — back straight (western side, T3 to T6)
+      { lng:-73.5241, lat:45.5034, label:'DRS 2' },
     ],
     sectors: [
-      { lng:-73.5205, lat:45.5014, label:'S1', color:'#ef4444' },
-      { lng:-73.5191, lat:45.4997, label:'S2', color:'#f59e0b' },
-      { lng:-73.5220, lat:45.4988, label:'S3', color:'#22c55e' },
+      // S1 ends at Casino hairpin entry
+      { lng:-73.5214, lat:45.5086, label:'S1', color:'#ef4444' },
+      // S2 ends after island chicane
+      { lng:-73.5240, lat:45.5010, label:'S2', color:'#f59e0b' },
+      // S3 — final sector on pit straight
+      { lng:-73.5210, lat:45.4997, label:'S3', color:'#22c55e' },
     ],
-    startFinish: [-73.5216, 45.5010],
-    badgeAnchor:  [-73.5242, 45.5022],
+    // S/F line is on the pit straight, eastern side
+    startFinish: [-73.5219, 45.5064],
+    badgeAnchor:  [-73.5258, 45.5100],
   },
 
   // ── BARCELONA / MADRID ─────────────────────────────────────────────────────

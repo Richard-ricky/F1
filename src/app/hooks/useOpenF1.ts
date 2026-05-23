@@ -112,7 +112,7 @@ const CIRCUIT_CENTRES: Record<string, [number, number]> = {
   Jeddah:       [39.1044,   21.6319], Suzuka:       [136.5342,  34.8431],
   Shanghai:     [121.2208,  31.3397], Miami:        [-80.2389,  25.9581],
   Imola:        [11.7167,   44.3439], Monaco:       [7.4269,    43.7347],
-  Montréal:     [-73.5228,  45.5000], Barcelona:    [2.2611,    41.5700],
+  Montréal:     [-73.5212,  45.5046], Barcelona:    [2.2611,    41.5700],
   Spielberg:    [14.7647,   47.2197], Silverstone:  [-1.0169,   52.0786],
   Budapest:     [19.2486,   47.5789], Spa:          [6.0000,    50.4372],
   Zandvoort:    [4.5406,    52.3888], Monza:        [9.2850,    45.6156],
