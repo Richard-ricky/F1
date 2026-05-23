@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+
+    <!-- PWA icons — create simple red square PNGs or use any F1-themed icons -->
+    <link rel="icon" type="image/png" href="/icon-192.png" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- PWA manifest — links to /public/manifest.json -->
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- PWA theme colour — matches the app background -->
+    <meta name="theme-color" content="#040404" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <!-- SEO / share -->
+    <meta name="description" content="Live F1 race timing, telemetry and strategy — powered by OpenF1" />
+    <meta property="og:title" content="F1 Timing" />
+    <meta property="og:description" content="Live F1 race data, replay and analysis" />
+
+    <title>F1 Timing</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
