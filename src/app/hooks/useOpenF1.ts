@@ -1,3 +1,4 @@
+import { resolveCircuit } from './useCircuit';
 import { useState, useEffect, useCallback, useRef } from 'react';
 
 const BASE = 'https://api.openf1.org/v1';
@@ -163,76 +164,11 @@ function byDriver<T extends { date: string; driver_number: number }>(arr: T[]): 
   }, {} as Record<number, T>);
 }
 
-// ─── COTA fallback coords ─────────────────────────────────────────────────────
-
-const COTA: [number, number][] = [
-  [-97.63580,30.13380],[-97.63650,30.13405],[-97.63720,30.13430],[-97.63790,30.13455],
-  [-97.63855,30.13478],[-97.63920,30.13510],[-97.63970,30.13548],[-97.63995,30.13590],
-  [-97.63985,30.13635],[-97.63960,30.13670],[-97.63920,30.13695],[-97.63870,30.13705],
-  [-97.63820,30.13695],[-97.63780,30.13670],[-97.63750,30.13640],[-97.63735,30.13605],
-  [-97.63740,30.13565],[-97.63760,30.13535],[-97.63790,30.13510],[-97.63830,30.13495],
-  [-97.63870,30.13490],[-97.63910,30.13480],[-97.63950,30.13462],[-97.63980,30.13435],
-  [-97.63990,30.13400],[-97.63975,30.13365],[-97.63945,30.13340],[-97.63905,30.13325],
-  [-97.63860,30.13315],[-97.63810,30.13310],[-97.63760,30.13312],[-97.63715,30.13318],
-  [-97.63680,30.13335],[-97.63660,30.13362],[-97.63658,30.13398],[-97.63670,30.13432],
-  [-97.63695,30.13458],[-97.63712,30.13488],[-97.63708,30.13518],[-97.63692,30.13542],
-  [-97.63668,30.13558],[-97.63638,30.13562],[-97.63608,30.13555],[-97.63578,30.13540],
-  [-97.63548,30.13520],[-97.63520,30.13495],[-97.63500,30.13465],[-97.63495,30.13432],
-  [-97.63505,30.13400],[-97.63525,30.13375],[-97.63555,30.13358],[-97.63590,30.13348],
-  [-97.63610,30.13355],[-97.63620,30.13368],[-97.63612,30.13380],[-97.63600,30.13380],
-  [-97.63580,30.13380],
-];
-
-// ─── Mock data ────────────────────────────────────────────────────────────────
-
-const MOCK_RAW = [
-  {id:'VER',full:'Max Verstappen',      team:'Red Bull Racing', cc:'NED',num:1, pos:1, gap:'LEADER', lap:'1:38.452',s1:'28.312',s2:'39.821',s3:'30.319',tire:'HARD'   as TireCompound,age:12},
-  {id:'NOR',full:'Lando Norris',        team:'McLaren',         cc:'GBR',num:4, pos:2, gap:'+2.341', lap:'1:38.789',s1:'28.502',s2:'39.945',s3:'30.342',tire:'MEDIUM' as TireCompound,age:8 },
-  {id:'LEC',full:'Charles Leclerc',     team:'Ferrari',         cc:'MON',num:16,pos:3, gap:'+4.125', lap:'1:38.891',s1:'28.612',s2:'40.012',s3:'30.267',tire:'HARD'   as TireCompound,age:14},
-  {id:'PIA',full:'Oscar Piastri',       team:'McLaren',         cc:'AUS',num:81,pos:4, gap:'+5.233', lap:'1:39.012',s1:'28.701',s2:'40.102',s3:'30.209',tire:'MEDIUM' as TireCompound,age:8 },
-  {id:'SAI',full:'Carlos Sainz',        team:'Ferrari',         cc:'ESP',num:55,pos:5, gap:'+8.456', lap:'1:38.234',s1:'28.201',s2:'39.712',s3:'30.321',tire:'HARD'   as TireCompound,age:15},
-  {id:'RUS',full:'George Russell',      team:'Mercedes',        cc:'GBR',num:63,pos:6, gap:'+11.231',lap:'1:39.333',s1:'28.812',s2:'40.201',s3:'30.320',tire:'MEDIUM' as TireCompound,age:5 },
-  {id:'HAM',full:'Lewis Hamilton',      team:'Mercedes',        cc:'GBR',num:44,pos:7, gap:'+13.512',lap:'1:39.512',s1:'28.901',s2:'40.312',s3:'30.299',tire:'SOFT'   as TireCompound,age:3 },
-  {id:'ALO',full:'Fernando Alonso',     team:'Aston Martin',    cc:'ESP',num:14,pos:8, gap:'+18.734',lap:'1:39.801',s1:'29.102',s2:'40.412',s3:'30.287',tire:'MEDIUM' as TireCompound,age:10},
-  {id:'STR',full:'Lance Stroll',        team:'Aston Martin',    cc:'CAN',num:18,pos:9, gap:'+22.103',lap:'1:40.012',s1:'29.301',s2:'40.512',s3:'30.199',tire:'HARD'   as TireCompound,age:16},
-  {id:'TSU',full:'Yuki Tsunoda',        team:'RB',              cc:'JPN',num:22,pos:10,gap:'+25.301',lap:'1:40.231',s1:'29.412',s2:'40.612',s3:'30.207',tire:'MEDIUM' as TireCompound,age:7 },
-  {id:'GAS',full:'Pierre Gasly',        team:'Alpine',          cc:'FRA',num:10,pos:11,gap:'+29.812',lap:'1:40.445',s1:'29.512',s2:'40.712',s3:'30.221',tire:'SOFT'   as TireCompound,age:4 },
-  {id:'OCO',full:'Esteban Ocon',        team:'Alpine',          cc:'FRA',num:31,pos:12,gap:'+33.201',lap:'1:40.612',s1:'29.612',s2:'40.812',s3:'30.188',tire:'MEDIUM' as TireCompound,age:9 },
-  {id:'ALB',full:'Alexander Albon',     team:'Williams',        cc:'THA',num:23,pos:13,gap:'+38.923',lap:'1:40.834',s1:'29.712',s2:'40.912',s3:'30.210',tire:'HARD'   as TireCompound,age:18},
-  {id:'SAR',full:'Logan Sargeant',      team:'Williams',        cc:'USA',num:2, pos:14,gap:'+45.112',lap:'1:41.023',s1:'29.812',s2:'41.012',s3:'30.199',tire:'MEDIUM' as TireCompound,age:11},
-  {id:'BOT',full:'Valtteri Bottas',     team:'Kick Sauber',     cc:'FIN',num:77,pos:15,gap:'+51.734',lap:'1:41.234',s1:'29.912',s2:'41.112',s3:'30.210',tire:'HARD'   as TireCompound,age:20},
-  {id:'ZHO',full:'Guanyu Zhou',         team:'Kick Sauber',     cc:'CHN',num:24,pos:16,gap:'+56.301',lap:'1:41.456',s1:'30.012',s2:'41.212',s3:'30.232',tire:'MEDIUM' as TireCompound,age:6 },
-  {id:'MAG',full:'Kevin Magnussen',     team:'Haas F1 Team',    cc:'DNK',num:20,pos:17,gap:'+61.523',lap:'1:41.678',s1:'30.112',s2:'41.312',s3:'30.254',tire:'HARD'   as TireCompound,age:22},
-  {id:'HUL',full:'Nico Hülkenberg',     team:'Haas F1 Team',    cc:'DEU',num:27,pos:18,gap:'+67.234',lap:'1:41.890',s1:'30.212',s2:'41.412',s3:'30.266',tire:'MEDIUM' as TireCompound,age:8 },
-  {id:'RIC',full:'Daniel Ricciardo',    team:'RB',              cc:'AUS',num:3, pos:19,gap:'+72.412',lap:'1:42.012',s1:'30.312',s2:'41.512',s3:'30.188',tire:'SOFT'   as TireCompound,age:2 },
-  {id:'PER',full:'Sergio Pérez',        team:'Red Bull Racing', cc:'MEX',num:11,pos:20,gap:'+78.923',lap:'1:42.234',s1:'30.412',s2:'41.612',s3:'30.210',tire:'HARD'   as TireCompound,age:15},
-];
-
-function makeMock(offset: number): ProcessedDriver[] {
-  const bestS1 = Math.min(...MOCK_RAW.map(d => +d.s1));
-  const bestS2 = Math.min(...MOCK_RAW.map(d => +d.s2));
-  const bestS3 = Math.min(...MOCK_RAW.map(d => +d.s3));
-  const sc = (v: number, best: number): SectorColor =>
-    v <= best + 0.001 ? 'purple' : v <= best + 0.3 ? 'green' : 'yellow';
-
-  return MOCK_RAW.map((d, i) => {
-    const [lng, lat] = COTA[(offset + i) % COTA.length];
-    const color = TEAM_COLORS[d.team] ?? '#FFF';
-    return {
-      id:d.id, driverId:d.id, abbreviation:d.id, fullName:d.full,
-      team:d.team, teamColor:color, flag:FLAG_CODES[d.cc]??'🏁', number:d.num,
-      position:d.pos, positionChange:0, gap:d.gap, interval:d.gap,
-      lastLap:d.lap, bestLap:d.lap, isFastestLap:d.id==='SAI',
-      s1:d.s1, s2:d.s2, s3:d.s3,
-      s1Color:sc(+d.s1,bestS1), s2Color:sc(+d.s2,bestS2), s3Color:sc(+d.s3,bestS3),
-      tire:d.tire, tireAge:d.age,
-      stints:[{compound:'SOFT' as TireCompound,laps:15},{compound:'MEDIUM' as TireCompound,laps:18},{compound:d.tire,laps:d.age}],
-      lat, lng, name:d.full, color,
-      throttle:80, brake:0, speed:280, drs:false, gear:7, rpm:11000,
-      lapHistory:[98.2,98.5,98.1,98.3,98.4,98.0,98.2,98.1],
-    };
-  });
+// Resolves the GPS polyline for the current circuit — used for XY→LatLng conversion only.
+function getCircuitTrack(location?: string | null): [number, number][] {
+  return resolveCircuit(location).track as [number, number][];
 }
+
 
 // ─── Legacy hook ──────────────────────────────────────────────────────────────
 
@@ -292,7 +228,6 @@ export function useOpenF1Live(pollMs = 3000) {
   const [raceControl,  setRaceControl]  = useState<ApiRaceControl[]>([]);
   const [radioMsgs,    setRadioMsgs]    = useState<ApiRadio[]>([]);
   const [isLive,       setIsLive]       = useState(false);
-  const [trackOffset,  setTrackOffset]  = useState(0);
   const prevPosRef = useRef<Record<number,number>>({});
   const skRef      = useRef<number|string>('latest');
 
@@ -308,22 +243,15 @@ export function useOpenF1Live(pollMs = 3000) {
         location:s.location, country:s.country_name, flag:'green',
         currentLap:0, totalLaps:57, sessionType:s.session_type, sessionKey:s.session_key,
       });
-    }).catch(() => setSessionInfo({
-      meetingName:'United States Grand Prix', circuitName:'COTA',
-      location:'Austin', country:'United States', flag:'green',
-      currentLap:42, totalLaps:56, sessionType:'Race', sessionKey:0,
-    }));
+    }).catch(() => {
+      // API unavailable — leave sessionInfo as null, show loading state in UI
+      console.warn('[useOpenF1Live] Could not fetch session info from OpenF1 API');
+    });
   }, []);
 
   // Drivers (once on mount)
   useEffect(() => {
     apiFetch<ApiDriver>('/drivers?session_key=latest').then(setDrivers).catch(()=>{});
-  }, []);
-
-  // Simulated movement when no live GPS
-  useEffect(() => {
-    const iv = setInterval(() => setTrackOffset(p => (p+1)%COTA.length), 2500);
-    return () => clearInterval(iv);
   }, []);
 
   // FAST poll (3s): positions + intervals only
@@ -439,7 +367,7 @@ export function useOpenF1Live(pollMs = 3000) {
 
   // Build processed drivers
   const mapDrivers: ProcessedDriver[] = (() => {
-    if (!drivers.length) return makeMock(trackOffset);
+    if (!drivers.length) return [];  // No data yet — wait for real OpenF1 response
     return drivers.map((d,i) => {
       const pos   = posMap[d.driver_number];
       const loc   = locMap[d.driver_number];
@@ -450,12 +378,12 @@ export function useOpenF1Live(pollMs = 3000) {
       const position = pos?.position ?? i+1;
       const prev     = prevPosRef.current[d.driver_number] ?? position;
 
-      let lat=30.1349, lng=-97.6374;
-      if (loc?.x!=null && loc?.y!=null) {
-        [lat,lng] = circuitXYToLatLng(loc.x, loc.y, sessionInfo?.location??'Austin');
-      } else {
-        const ti=(trackOffset+i)%COTA.length; [lng,lat]=COTA[ti];
+      const _centre = resolveCircuit(sessionInfo?.location).center;
+      let lat = _centre[1], lng = _centre[0];
+      if (loc?.x != null && loc?.y != null) {
+        [lat, lng] = circuitXYToLatLng(loc.x, loc.y, sessionInfo?.location ?? 'Austin');
       }
+      // No fake fallback — if OpenF1 has no location data yet, driver stays at circuit centre
 
       const tire    = COMPOUND_MAP[(stint?.compound??'').toUpperCase()]??'HARD';
       const tireAge = stint&&lap ? Math.max(0,lap.lap_number-stint.lap_start) : 0;
@@ -537,16 +465,8 @@ export function useOpenF1Live(pollMs = 3000) {
     timestamp:new Date(r.date).toLocaleTimeString(), drivers:r.driver_number?[String(r.driver_number)]:[],
   }));
 
-  const fallbackEvents: RaceEvent[] = [
-    {id:'1',lap:42,type:'overtake',    title:'Overtake – NOR on LEC',  description:'Norris makes a bold move into Turn 1',       timestamp:'14:32:15',drivers:['NOR','LEC']},
-    {id:'2',lap:41,type:'fastest_lap', title:'Fastest Lap – SAI',       description:'Sainz sets purple in S2 & S3: 1:37.234',    timestamp:'14:30:42',drivers:['SAI']},
-    {id:'3',lap:40,type:'pitstop',     title:'Pit Stop – RUS',          description:'Russell pits for Mediums – 2.3s stop',       timestamp:'14:28:18',drivers:['RUS']},
-    {id:'4',lap:38,type:'incident',    title:'Track Limits – PER',      description:'Pérez exceeds limits at T19',                timestamp:'14:24:55',drivers:['PER']},
-    {id:'5',lap:35,type:'pitstop',     title:'Double Stack – Ferrari',  description:'LEC 2.8s · SAI 3.1s, both onto Hards',       timestamp:'14:18:09',drivers:['LEC','SAI']},
-    {id:'6',lap:33,type:'incident',    title:'Yellow Flag – Sector 2',  description:'Debris at Turn 9, marshals clearing',        timestamp:'14:14:22',drivers:[]},
-    {id:'7',lap:28,type:'pitstop',     title:'Pit Stop – VER',          description:'Verstappen pits from lead – 2.1s for Hards', timestamp:'14:04:45',drivers:['VER']},
-  ];
-  const activeEvents = rcEvents.length ? rcEvents : fallbackEvents;
+  // Only show real race control events — no fabricated data
+  const activeEvents = rcEvents;
 
   const radioMessages: RadioMessage[] = radioMsgs.map(r => {
     const drv = mapDrivers.find(d=>d.number===r.driver_number);
@@ -569,6 +489,6 @@ export function useOpenF1Live(pollMs = 3000) {
     totalLaps:sessionInfo?.totalLaps??56,
     drivers, positions:Object.values(posMap),
     locations:Object.values(locMap), stints:Object.values(stintMap),
-    loading:false, error:null,
+    loading:!drivers.length && !sessionInfo, error:null,
   };
 }
