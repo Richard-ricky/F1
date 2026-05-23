@@ -24,11 +24,11 @@ import { ErrorBoundary }    from './components/ErrorBoundary';
 // ── Hooks ─────────────────────────────────────────────────────────────────────
 import { useOpenF1Live }          from './hooks/useOpenF1';
 import { useReplayEngine }        from './hooks/useReplayEngine';
-import { useInterpolatedDrivers } from './hooks/useInterpolatedDrivers';
+import { useInterpolatedDrivers } from './hooks/Useinterpolateddrivers';
 import { useTyreDegradation }     from './hooks/useTyreDegradation';
 import { useGapPredictor }        from './hooks/useGapPredictor';
-import { useKeyboardShortcuts }   from './hooks/useKeyboardShortcuts';
-import { usePWA }                 from './hooks/usePWA';
+import { useKeyboardShortcuts }   from './hooks/Usekeyboardshortcuts';
+import { usePWA }                 from './hooks/Usepwa';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type ViewMode   = 'live' | 'replay' | 'history';
