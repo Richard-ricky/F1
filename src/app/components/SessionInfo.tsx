@@ -6,34 +6,6 @@ interface SessionInfoProps {
   weather?: WeatherInfo;
 }
 
-// 2025 F1 Calendar fallback
-const F1_CALENDAR_2025 = [
-  { round:1,  name:'Australian GP',    circuit:'Albert Park',              country:'🇦🇺', date:'Mar 16' },
-  { round:2,  name:'Chinese GP',       circuit:'Shanghai International',   country:'🇨🇳', date:'Mar 23' },
-  { round:3,  name:'Japanese GP',      circuit:'Suzuka',                   country:'🇯🇵', date:'Apr 6'  },
-  { round:4,  name:'Bahrain GP',       circuit:'Bahrain International',    country:'🇧🇭', date:'Apr 13' },
-  { round:5,  name:'Saudi Arabian GP', circuit:'Jeddah Corniche',          country:'🇸🇦', date:'Apr 20' },
-  { round:6,  name:'Miami GP',         circuit:'Miami International',      country:'🇺🇸', date:'May 4'  },
-  { round:7,  name:'Emilia Romagna GP',circuit:'Imola',                    country:'🇮🇹', date:'May 18' },
-  { round:8,  name:'Monaco GP',        circuit:'Circuit de Monaco',        country:'🇲🇨', date:'May 25' },
-  { round:9,  name:'Spanish GP',       circuit:'Barcelona-Catalunya',      country:'🇪🇸', date:'Jun 1'  },
-  { round:10, name:'Canadian GP',      circuit:'Gilles Villeneuve',        country:'🇨🇦', date:'Jun 15' },
-  { round:11, name:'Austrian GP',      circuit:'Red Bull Ring',            country:'🇦🇹', date:'Jun 29' },
-  { round:12, name:'British GP',       circuit:'Silverstone',              country:'🇬🇧', date:'Jul 6'  },
-  { round:13, name:'Belgian GP',       circuit:'Spa-Francorchamps',        country:'🇧🇪', date:'Jul 27' },
-  { round:14, name:'Hungarian GP',     circuit:'Hungaroring',              country:'🇭🇺', date:'Aug 3'  },
-  { round:15, name:'Dutch GP',         circuit:'Zandvoort',                country:'🇳🇱', date:'Aug 31' },
-  { round:16, name:'Italian GP',       circuit:'Monza',                    country:'🇮🇹', date:'Sep 7'  },
-  { round:17, name:'Azerbaijan GP',    circuit:'Baku City Circuit',        country:'🇦🇿', date:'Sep 21' },
-  { round:18, name:'Singapore GP',     circuit:'Marina Bay Street',        country:'🇸🇬', date:'Oct 5'  },
-  { round:19, name:'US GP',            circuit:'Circuit of the Americas',  country:'🇺🇸', date:'Oct 19' },
-  { round:20, name:'Mexican GP',       circuit:'Hermanos Rodríguez',       country:'🇲🇽', date:'Oct 26' },
-  { round:21, name:'Brazilian GP',     circuit:'Interlagos',               country:'🇧🇷', date:'Nov 9'  },
-  { round:22, name:'Las Vegas GP',     circuit:'Las Vegas Street',         country:'🇺🇸', date:'Nov 22' },
-  { round:23, name:'Qatar GP',         circuit:'Lusail International',     country:'🇶🇦', date:'Nov 30' },
-  { round:24, name:'Abu Dhabi GP',     circuit:'Yas Marina',               country:'🇦🇪', date:'Dec 7'  },
-];
-
 export default function SessionInfo({ weather }: SessionInfoProps) {
   const { currentSession, upcomingSessions, meetings, loading } = useF1Sessions();
 
@@ -46,6 +18,14 @@ export default function SessionInfo({ weather }: SessionInfoProps) {
     const dirs = ['N','NE','E','SE','S','SW','W','NW'];
     return dirs[Math.round(deg / 45) % 8];
   };
+
+  const fmtDate = (s: string) =>
+    new Date(s).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+
+  const fmtDateTime = (s: string) =>
+    new Date(s).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+  const now = new Date();
 
   return (
     <div className="h-full overflow-auto" style={{ scrollbarWidth:'thin', scrollbarColor:'rgba(255,255,255,0.1) transparent' }}>
@@ -110,7 +90,7 @@ export default function SessionInfo({ weather }: SessionInfoProps) {
           </div>
         </div>
 
-        {/* ── Upcoming Sessions from API ── */}
+        {/* ── Upcoming Sessions (live from OpenF1) ── */}
         {upcomingSessions.length > 0 && (
           <div className="rounded-xl border border-white/8 overflow-hidden" style={{ background:'rgba(255,255,255,0.03)' }}>
             <div className="px-4 py-3 border-b border-white/5 flex items-center gap-2">
@@ -118,7 +98,7 @@ export default function SessionInfo({ weather }: SessionInfoProps) {
               <span className="text-[10px] font-bold text-cyan-400 tracking-widest">UPCOMING SESSIONS</span>
             </div>
             <div className="divide-y divide-white/5">
-              {upcomingSessions.slice(0,4).map(s => (
+              {upcomingSessions.slice(0, 4).map(s => (
                 <div key={s.session_key} className="px-4 py-3">
                   <div className="text-[11px] font-bold text-white">{s.session_name}</div>
                   <div className="flex items-center gap-2 mt-1 text-[10px] text-white/50">
@@ -126,7 +106,7 @@ export default function SessionInfo({ weather }: SessionInfoProps) {
                   </div>
                   <div className="flex items-center gap-2 mt-0.5 text-[10px] text-white/50">
                     <Calendar className="w-3 h-3" />
-                    {new Date(s.date_start).toLocaleDateString(undefined,{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}
+                    {fmtDateTime(s.date_start)}
                   </div>
                 </div>
               ))}
@@ -134,28 +114,107 @@ export default function SessionInfo({ weather }: SessionInfoProps) {
           </div>
         )}
 
-        {/* ── 2025 Race Calendar ── */}
+        {/* ── Season Calendar — live from OpenF1 meetings API ── */}
         <div className="rounded-xl border border-white/8 overflow-hidden" style={{ background:'rgba(255,255,255,0.03)' }}>
-          <div className="px-4 py-3 border-b border-white/5 flex items-center gap-2">
-            <Calendar className="w-3.5 h-3.5 text-cyan-400" />
-            <span className="text-[10px] font-bold text-cyan-400 tracking-widest">2025 SEASON CALENDAR</span>
+          <div className="px-4 py-3 border-b border-white/5 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-3.5 h-3.5 text-cyan-400" />
+              <span className="text-[10px] font-bold text-cyan-400 tracking-widest">
+                {meetings.length > 0
+                  ? `${meetings[0]?.year ?? new Date().getFullYear()} SEASON CALENDAR`
+                  : 'SEASON CALENDAR'}
+              </span>
+            </div>
+            {meetings.length > 0 && (
+              <span className="text-[9px] text-white/30">
+                {meetings.length} rounds
+              </span>
+            )}
           </div>
-          <div className="divide-y divide-white/5 max-h-80 overflow-y-auto">
-            {F1_CALENDAR_2025.map(race => (
-              <div key={race.round} className="px-4 py-2.5 flex items-center gap-3 hover:bg-white/3 transition-colors">
-                <div className="w-5 text-[10px] font-black text-white/30">{race.round}</div>
-                <div className="text-lg leading-none">{race.country}</div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-[11px] font-bold text-white truncate">{race.name}</div>
-                  <div className="text-[9px] text-white/35 truncate">{race.circuit}</div>
-                </div>
-                <div className="text-[10px] font-bold text-white/50 shrink-0">{race.date}</div>
-              </div>
-            ))}
-          </div>
+
+          {loading ? (
+            <div className="px-4 py-6 text-center text-[11px] text-white/30">
+              Loading calendar…
+            </div>
+          ) : meetings.length === 0 ? (
+            <div className="px-4 py-6 text-center text-[11px] text-white/30">
+              Calendar unavailable — check connection
+            </div>
+          ) : (
+            <div className="divide-y divide-white/5 max-h-80 overflow-y-auto"
+              style={{ scrollbarWidth:'thin', scrollbarColor:'rgba(255,255,255,0.08) transparent' }}>
+              {meetings.map((m, i) => {
+                const isPast   = new Date(m.date_start) < now;
+                const isNext   = !isPast && meetings.slice(0, i).every(p => new Date(p.date_start) < now);
+
+                return (
+                  <div
+                    key={m.meeting_key}
+                    className="px-4 py-2.5 flex items-center gap-3 transition-colors"
+                    style={{
+                      background: isNext ? 'rgba(225,6,0,0.06)' : 'transparent',
+                      borderLeft: isNext ? '2px solid #E8002D' : '2px solid transparent',
+                      opacity: isPast ? 0.45 : 1,
+                    }}
+                  >
+                    {/* Round number */}
+                    <div className="w-5 text-[10px] font-black shrink-0"
+                      style={{ color: isNext ? '#E8002D' : 'rgba(255,255,255,0.25)' }}>
+                      {i + 1}
+                    </div>
+
+                    {/* Country name → derive flag emoji from country_name */}
+                    <div className="text-base leading-none shrink-0" title={m.country_name}>
+                      {countryFlag(m.country_name)}
+                    </div>
+
+                    {/* Meeting name + circuit */}
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[11px] font-bold text-white truncate flex items-center gap-2">
+                        {m.meeting_name}
+                        {isNext && (
+                          <span className="text-[8px] font-black text-red-400 tracking-widest shrink-0">NEXT</span>
+                        )}
+                      </div>
+                      <div className="text-[9px] truncate" style={{ color:'rgba(255,255,255,0.35)' }}>
+                        {m.circuit_short_name}
+                      </div>
+                    </div>
+
+                    {/* Date */}
+                    <div className="text-[10px] font-bold shrink-0"
+                      style={{ color: isNext ? '#E8002D' : isPast ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.5)' }}>
+                      {fmtDate(m.date_start)}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
       </div>
     </div>
   );
 }
+
+// ─── Country name → flag emoji ────────────────────────────────────────────────
+// Converts OpenF1 country_name strings to flag emojis without a lookup table.
+// Derives the ISO 3166-1 alpha-2 code from known country names.
+function countryFlag(countryName: string): string {
+  const map: Record<string, string> = {
+    'Australia':'AU', 'China':'CN', 'Japan':'JP', 'Bahrain':'BH',
+    'Saudi Arabia':'SA', 'United States':'US', 'Italy':'IT',
+    'Monaco':'MC', 'Spain':'ES', 'Canada':'CA', 'Austria':'AT',
+    'United Kingdom':'GB', 'Belgium':'BE', 'Hungary':'HU',
+    'Netherlands':'NL', 'Azerbaijan':'AZ', 'Singapore':'SG',
+    'Mexico':'MX', 'Brazil':'BR', 'United Arab Emirates':'AE',
+    'Qatar':'QA', 'France':'FR', 'Portugal':'PT',
+  };
+  const code = map[countryName];
+  if (!code) return '🏁';
+  return code.toUpperCase().split('').map(c =>
+    String.fromCodePoint(0x1F1E6 - 65 + c.charCodeAt(0))
+  ).join('');
+}
+

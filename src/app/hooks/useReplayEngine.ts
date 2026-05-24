@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { ProcessedDriver, SectorColor, TireCompound } from './useOpenF1';
+import { resolveCircuit } from './useCircuit';
 
 const BASE = 'https://api.openf1.org/v1';
 
@@ -32,33 +33,7 @@ interface ReplayFrame {
   positions: Record<number, { x: number; y: number; z: number; position: number }>;
 }
 
-// ─── COTA fallback ─────────────────────────────────────────────────────────────
-
-const COTA_TRACK: [number, number][] = [
-  [-97.63580, 30.13380], [-97.63650, 30.13405], [-97.63720, 30.13430],
-  [-97.63790, 30.13455], [-97.63855, 30.13478],
-  [-97.63920, 30.13510], [-97.63970, 30.13548], [-97.63995, 30.13590],
-  [-97.63985, 30.13635], [-97.63960, 30.13670],
-  [-97.63920, 30.13695], [-97.63870, 30.13705], [-97.63820, 30.13695],
-  [-97.63780, 30.13670],
-  [-97.63750, 30.13640], [-97.63735, 30.13605], [-97.63740, 30.13565],
-  [-97.63760, 30.13535],
-  [-97.63790, 30.13510], [-97.63830, 30.13495], [-97.63870, 30.13490],
-  [-97.63910, 30.13480], [-97.63950, 30.13462], [-97.63980, 30.13435],
-  [-97.63990, 30.13400], [-97.63975, 30.13365], [-97.63945, 30.13340],
-  [-97.63905, 30.13325],
-  [-97.63860, 30.13315], [-97.63810, 30.13310], [-97.63760, 30.13312],
-  [-97.63715, 30.13318], [-97.63680, 30.13335], [-97.63660, 30.13362],
-  [-97.63658, 30.13398], [-97.63670, 30.13432],
-  [-97.63695, 30.13458], [-97.63712, 30.13488], [-97.63708, 30.13518],
-  [-97.63692, 30.13542], [-97.63668, 30.13558], [-97.63638, 30.13562],
-  [-97.63608, 30.13555],
-  [-97.63578, 30.13540], [-97.63548, 30.13520], [-97.63520, 30.13495],
-  [-97.63500, 30.13465], [-97.63495, 30.13432], [-97.63505, 30.13400],
-  [-97.63525, 30.13375], [-97.63555, 30.13358],
-  [-97.63590, 30.13348], [-97.63610, 30.13355], [-97.63620, 30.13368],
-  [-97.63612, 30.13380], [-97.63600, 30.13380], [-97.63580, 30.13380],
-];
+// Circuit track resolved dynamically from resolveCircuit(location)
 
 const TEAM_COLORS: Record<string, string> = {
   'Red Bull Racing': '#3671C6', 'Ferrari': '#E8002D', 'Mercedes': '#27F4D2',
@@ -74,42 +49,14 @@ const FLAG_CODES: Record<string, string> = {
 };
 
 // ─── Coordinate conversion ─────────────────────────────────────────────────────
-
-interface CircuitCenter { center: [number, number] }
-
-const CIRCUIT_GPS: Record<string, CircuitCenter> = {
-  'Melbourne':   { center: [144.9686, -37.8497] },
-  'Bahrain':     { center: [50.5112,   26.0325] },
-  'Jeddah':      { center: [39.1044,   21.6319] },
-  'Suzuka':      { center: [136.5342,  34.8431] },
-  'Shanghai':    { center: [121.2208,  31.3397] },
-  'Miami':       { center: [-80.2389,  25.9581] },
-  'Imola':       { center: [11.7167,   44.3439] },
-  'Monaco':      { center: [7.4269,    43.7347] },
-  'Montréal':    { center: [-73.5228,  45.5000] },
-  'Barcelona':   { center: [2.2611,    41.5700] },
-  'Spielberg':   { center: [14.7647,   47.2197] },
-  'Silverstone': { center: [-1.0169,   52.0786] },
-  'Budapest':    { center: [19.2486,   47.5789] },
-  'Spa':         { center: [6.0000,    50.4372] },
-  'Zandvoort':   { center: [4.5406,    52.3888] },
-  'Monza':       { center: [9.2850,    45.6156] },
-  'Baku':        { center: [49.8532,   40.3725] },
-  'Singapore':   { center: [103.8640,   1.2914] },
-  'Austin':      { center: [-97.6430,  30.1328] },
-  'Mexico City': { center: [-99.0908,  19.4042] },
-  'São Paulo':   { center: [-46.6978, -23.7036] },
-  'Las Vegas':   { center: [-115.1728, 36.1147] },
-  'Lusail':      { center: [51.4536,   25.4900] },
-  'Yas Marina':  { center: [54.6031,   24.4672] },
-};
+// Uses resolveCircuit from useCircuit.ts — single source of truth for all GPS centres.
 
 function xyToLatLng(x: number, y: number, location: string): [number, number] {
-  const info = CIRCUIT_GPS[location] ?? CIRCUIT_GPS['Austin'];
-  const [cLng, cLat] = info.center;
-  const mPerDegLat = 111_320;
-  const mPerDegLng = 111_320 * Math.cos(cLat * Math.PI / 180);
-  return [cLat + y / mPerDegLat, cLng + x / mPerDegLng];
+  const circuit = resolveCircuit(location);
+  const [cLng, cLat] = circuit.center;
+  const lat = cLat + y / 111_320;
+  const lng = cLng + x / (111_320 * Math.cos(cLat * Math.PI / 180));
+  return [lat, lng];
 }
 
 // ─── Group location records into time-bucketed frames ─────────────────────────
@@ -183,32 +130,6 @@ function buildFrames(
   return frames;
 }
 
-// ─── Generate mock replay frames when no API data ─────────────────────────────
-
-function buildMockFrames(totalFrames = 200): ReplayFrame[] {
-  const driverNumbers = [1, 4, 16, 81, 55, 63, 44, 14, 18, 22, 10, 31, 23, 2, 77, 24, 20, 27, 3, 11];
-  const frames: ReplayFrame[] = [];
-  const t0 = Date.now() - 3600_000; // 1 hour ago
-
-  for (let f = 0; f < totalFrames; f++) {
-    const frame: ReplayFrame = {
-      timestamp: new Date(t0 + f * 500).toISOString(),
-      positions: {},
-    };
-    driverNumbers.forEach((num, i) => {
-      // Simulate each driver at a different track index, advancing each frame
-      const trackI = (f + i * 1) % COTA_TRACK.length;
-      const [lng, lat] = COTA_TRACK[trackI];
-      // Convert GPS back to "x/y" form (metres from COTA centre)
-      const cLat = 30.1328, cLng = -97.6430;
-      const x = (lng - cLng) * 111_320 * Math.cos(cLat * Math.PI / 180);
-      const y = (lat - cLat) * 111_320;
-      frame.positions[num] = { x, y, z: 0, position: i + 1 };
-    });
-    frames.push(frame);
-  }
-  return frames;
-}
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
@@ -235,14 +156,7 @@ export function useReplayEngine() {
       .then(r => r.ok ? r.json() : [])
       .then((data: RaceSession[]) => setSessions(data.reverse())) // most recent first
       .catch(() => {
-        // Provide some mock sessions for offline use
-        setSessions([
-          { session_key: 9158, session_name: 'Race', date_start: '2024-10-20', location: 'Austin', country_name: 'United States', circuit_short_name: 'COTA', year: 2024 },
-          { session_key: 9140, session_name: 'Race', date_start: '2024-10-06', location: 'Singapore', country_name: 'Singapore', circuit_short_name: 'Marina Bay', year: 2024 },
-          { session_key: 9123, session_name: 'Race', date_start: '2024-09-22', location: 'Baku', country_name: 'Azerbaijan', circuit_short_name: 'Baku City', year: 2024 },
-          { session_key: 9108, session_name: 'Race', date_start: '2024-09-01', location: 'Monza', country_name: 'Italy', circuit_short_name: 'Monza', year: 2024 },
-          { session_key: 9090, session_name: 'Race', date_start: '2024-08-25', location: 'Spa', country_name: 'Belgium', circuit_short_name: 'Spa', year: 2024 },
-        ]);
+        // API unavailable — leave sessions empty, user will see 'no sessions'
       })
       .finally(() => setLoadingSessions(false));
   }, []);
@@ -289,14 +203,15 @@ export function useReplayEngine() {
       setTotalLaps(maxLap);
 
       // Build replay frames
+      // Only build frames from real location data — no fake fallback
       const built = locations.length
         ? buildFrames(locations, positions, 500)
-        : buildMockFrames(400);
+        : []; // No GPS data available for this session
 
       setFrames(built);
-    } catch {
-      // Full fallback
-      setFrames(buildMockFrames(400));
+    } catch (err) {
+      console.warn('[useReplayEngine] Failed to load session data:', err);
+      // Leave frames empty — UI will show 'No data available'
     } finally {
       setLoadingSession(false);
     }
@@ -405,17 +320,38 @@ export function useReplayEngine() {
 
   const replayLeaderboard = replayDrivers.map(d => ({
     ...d,
-    gap:     d.position === 1 ? 'LEADER' : `P${d.position}`,
-    lastLap: '--:--.---',
+    gap:     d.gap,
+    lastLap: d.lastLap,
     tireAge: 0,
   }));
 
   // ── Replay events (positional overtakes, detected from frame deltas) ─────────
 
-  const replayEvents: ReplayEvent[] = [
-    { id: 'r1', lap: Math.floor(totalLaps * 0.75), type: 'overtake', title: 'Replay overtake detected', description: 'Position change detected in data', timestamp: '', drivers: [] },
-    { id: 'r2', lap: Math.floor(totalLaps * 0.50), type: 'pitstop',  title: 'Pit stop window',          description: 'Multiple drivers pitted this lap',   timestamp: '', drivers: [] },
-  ];
+  // Detect real position changes from frame data as replay events
+  const replayEvents: ReplayEvent[] = (() => {
+    if (frames.length < 2 || frameIndex === 0) return [];
+    const events: ReplayEvent[] = [];
+    const prev = frames[Math.max(0, frameIndex - 1)]?.positions ?? {};
+    const curr = frames[frameIndex]?.positions ?? {};
+    Object.entries(curr).forEach(([numStr, data]) => {
+      const num = Number(numStr);
+      const prevPos = prev[num]?.position;
+      if (prevPos !== undefined && prevPos !== data.position && data.position < prevPos) {
+        const meta = driverMeta[num];
+        const pct = frameIndex / Math.max(frames.length - 1, 1);
+        events.push({
+          id: `${num}-${frameIndex}`,
+          lap: Math.round(pct * totalLaps),
+          type: 'overtake',
+          title: `${meta?.abbreviation ?? `DR${num}`} gains position`,
+          description: `P${prevPos} → P${data.position}`,
+          timestamp: frames[frameIndex]?.timestamp ?? '',
+          drivers: [meta?.abbreviation ?? String(num)],
+        });
+      }
+    });
+    return events;
+  })();
 
   const progress = frames.length ? frameIndex / (frames.length - 1) : 0;
 
